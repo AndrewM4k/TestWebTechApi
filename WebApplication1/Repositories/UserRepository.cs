@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using System.Data.SqlTypes;
 using System.Linq.Expressions;
 using WebApplication1.Enums;
 using WebApplication1.Models;
@@ -16,10 +17,9 @@ namespace WebApplication1.Repositories
             { nameof(UserQuery.MinAge), (query, value) => query.Where(user => user.Age >= (int)value) },
             { nameof(UserQuery.MaxAge), (query, value) => query.Where(user => user.Age <= (int)value) },
             { nameof(UserQuery.Gender), (query, value) => query.Where(user => user.Gender == (Gender)value) },
-            { nameof(UserQuery.Email), (query, value) => query.Where(user => user.Email.Contains((string)value, StringComparison.OrdinalIgnoreCase)) },
-            { nameof(UserQuery.Username), (query, value) => query.Where(user => user.Username.Contains((string)value, StringComparison.OrdinalIgnoreCase)) },
-            { nameof(UserQuery.Name), (query, value) => query.Where(user => user.Name.Contains((string) value, StringComparison.OrdinalIgnoreCase)) },
-            { nameof(UserQuery.Roles), (query, value) => query.Where(user =>((IEnumerable<RoleName>)value).All(v => user.Roles.Select(r => r.Name).Contains(v))) }
+            { nameof(UserQuery.Email), (query, value) => query.Where(user => EF.Functions.Like(user.Email.ToLower(), $"%{(string)value}%".ToLower())) },
+            { nameof(UserQuery.Username), (query, value) => query.Where(user => EF.Functions.Like(user.Username.ToLower(), $"%{(string)value}%".ToLower())) },
+            { nameof(UserQuery.Name), (query, value) => query.Where(user => EF.Functions.Like(user.Name.ToLower(), $"%{(string)value}%".ToLower())) }
         };
 
         public UserRepository(DbContextUsers context)
@@ -29,7 +29,7 @@ namespace WebApplication1.Repositories
 
         public async Task<IEnumerable<User>> GetAllAsync(UserQuery userQuery, CancellationToken cancellationToken)
         {
-            var query = _context.Users.AsQueryable();
+            var query = _context.Users.Include(x => x.Roles).AsQueryable();
 
             query = ApplyFilters(query, userQuery);
             query = ApplySorting(query, userQuery);
@@ -47,6 +47,59 @@ namespace WebApplication1.Repositories
             var user = await _context.Users.FirstOrDefaultAsync(x => x.Username == username, cancellationToken);
 
             return user;
+        }
+
+        public async Task AddUserAsync(User user, CancellationToken cancellationToken)
+        {
+            await _context.AddAsync(user, cancellationToken);
+            await _context.SaveChangesAsync(cancellationToken);
+        }
+
+        public async Task<User> GetUserWithRolesById(Guid id, CancellationToken cancellationToken)
+        {
+            var user = await _context.Users.Include(x => x.Roles).FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+
+            return user;
+        }
+
+        public async Task AddRoleToUserAsync(Guid userId, RoleName role, CancellationToken cancellationToken)
+        {
+            var user = await GetUserWithRolesById(userId, cancellationToken);
+            var dbRole = await _context.Roles.FirstOrDefaultAsync(x => x.Name == role);
+            user.Roles.Add(dbRole);
+
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task UpdateUserAsync(Guid id, User newUser, CancellationToken cancellationToken)
+        {
+            var user = await _context.Users.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+
+            if (user == null)
+            {
+                throw new InvalidOperationException($"Cannot find user with id {id}");
+            }
+
+            user.Email = newUser.Email;
+            user.Age = newUser.Age;
+            user.Gender = newUser.Gender;
+            user.Name = newUser.Name;
+            user.Username = newUser.Username;
+
+            await _context.SaveChangesAsync(cancellationToken);
+        }
+
+        public async Task RemoveAsync(Guid id, CancellationToken cancellationToken)
+        {
+            var oldUser = await _context.Users.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+
+            if (oldUser == null)
+            {
+                return;
+            }
+
+            _context.Remove(oldUser);
+            await _context.SaveChangesAsync(cancellationToken);
         }
 
         private IQueryable<User> ApplyFilters(IQueryable<User> query, UserQuery userQuery)

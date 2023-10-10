@@ -4,7 +4,6 @@ namespace SportsCompetition.Dtos
 {
     public class SingUpDto
     {
-
         public string Username { get; set; }
         public string Name { get; set; }
         public int Age { get; set; }

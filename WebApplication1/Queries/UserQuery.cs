@@ -13,7 +13,6 @@ namespace WebApplication1.Queries
         public string Username { get; set; }
         public string Name { get; set; }
         public string Email { get; set; }
-        public IEnumerable<RoleName> Roles { get; set; }
 
         public string SortBy { get; set; } = "Name";
         public bool SortAscending { get; set; } = true;

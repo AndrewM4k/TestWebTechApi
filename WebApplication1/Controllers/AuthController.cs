@@ -18,30 +18,37 @@ namespace WebApplication1.Controllers
         private readonly RefreshTokenService _refreshTokenService;
         private readonly DbContextUsers _context;
         private readonly IUserRepository _userRepository;
+        private readonly IPasswordHashingService _passwordHasing;
 
         public AuthController(
             TokenService tokenService,
             RefreshTokenService refreshTokenService,
             DbContextUsers context,
-            IUserRepository userRepository)
+            IUserRepository userRepository,
+            IPasswordHashingService passwordHasing)
         {
             _tokenService = tokenService;
             _refreshTokenService = refreshTokenService;
             _context = context;
             _userRepository = userRepository;
+            _passwordHasing = passwordHasing;
         }
 
         [HttpPost("singIn")]
         public async Task<ActionResult<SignInResultDto>> SignInAsync(SingInDto dto, CancellationToken cancellationToken)
         {
             var user = await _userRepository.GetByUsernameAsync(dto.Username, cancellationToken);
-
             if (user == null)
             {
                 return Unauthorized();
             }
 
-            var token = await _tokenService.CreateTokenAsync(user);
+            if (!_passwordHasing.CheckPassword(dto.Password, user.PasswordHash))
+            {
+                return Unauthorized();
+            }
+
+            var token = await _tokenService.CreateTokenAsync(user, cancellationToken);
             var refreshToken = await _refreshTokenService.CreateRefreshTokenAsync(user);
 
             var result = new SignInResultDto
@@ -54,7 +61,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPost("refresh")]
-        public async Task<ActionResult<RefreshTokenResultDto>> RefreshTokenAsync(RefreshTokenDto dto)
+        public async Task<ActionResult<RefreshTokenResultDto>> RefreshTokenAsync(RefreshTokenDto dto, CancellationToken cancellationToken)
         {
             var token = await _context.RefreshTokens
                 .Include(t => t.User)
@@ -67,7 +74,7 @@ namespace WebApplication1.Controllers
 
             var result = new RefreshTokenResultDto
             {
-                AccessToken = await _tokenService.CreateTokenAsync(token.User),
+                AccessToken = await _tokenService.CreateTokenAsync(token.User, cancellationToken),
                 RefreshToken = await _refreshTokenService.CreateRefreshTokenAsync(token.User)
             };
 

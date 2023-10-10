@@ -23,6 +23,7 @@ namespace WebApplication1
             builder.Services.AddScoped<RefreshTokenService>();
             builder.Services.AddScoped<UserService>();
             builder.Services.AddScoped<IUserRepository, UserRepository>();
+            builder.Services.AddScoped<IPasswordHashingService, PasswordHashingService>();
 
             builder.Services.AddValidatorsFromAssemblyContaining<Program>(ServiceLifetime.Scoped);
 
@@ -77,8 +78,8 @@ namespace WebApplication1
 
             app.UseHttpsRedirection();
 
+            app.UseAuthentication();
             app.UseAuthorization();
-
 
             app.MapControllers();
 

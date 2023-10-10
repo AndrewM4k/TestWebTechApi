@@ -2,6 +2,7 @@
 using WebApplication1.Enums;
 using WebApplication1.Models;
 using WebApplication1.Persistance;
+using WebApplication1.Services;
 
 namespace WebApplication1
 {
@@ -12,6 +13,7 @@ namespace WebApplication1
             using (var scope = services.CreateScope())
             {
                 var context = scope.ServiceProvider.GetRequiredService<DbContextUsers>();
+                var hashingService = scope.ServiceProvider.GetRequiredService<IPasswordHashingService>();
 
                 if (!context.Roles.Any())
                 {
@@ -39,7 +41,7 @@ namespace WebApplication1
                             Age = 0,
                             Username = RoleName.SuperAdmin.ToString(),
                             Gender = Gender.Male,
-                            Password = "Password04$SuperAdmin",
+                            PasswordHash = hashingService.HashPassword("Password04$SuperAdmin"),
                             Roles = new List<Role>(){ context.Roles.FirstOrDefault(i => i.Name == RoleName.SuperAdmin) }
                         },
                         new User()
@@ -49,7 +51,7 @@ namespace WebApplication1
                             Age = 0,
                             Username = RoleName.Admin.ToString(),
                             Gender = Gender.Male,
-                            Password = "Password04$Admin",
+                            PasswordHash = hashingService.HashPassword("Password04$Admin"),
                             Roles = new List<Role>(){ context.Roles.FirstOrDefault(i => i.Name == RoleName.Admin) }
                         },
                     };

@@ -21,16 +21,17 @@ namespace WebApplication1.Services
             _context = context;
         }
 
-        public async Task<string> CreateTokenAsync(User user)
+        public async Task<string> CreateTokenAsync(User user, CancellationToken cancellationToken)
         {
             var claims = new List<Claim>()
             {
                 new (JwtRegisteredClaimNames.NameId, user.Id.ToString()),
                 new (JwtRegisteredClaimNames.UniqueName, user.Name),
             }; 
-            var roles = _context.Roles
+            var roles = await _context.Roles
                 .Include(r => r.Users)
-                .Where(u => u.Users.Contains(user));
+                .Where(u => u.Users.Contains(user))
+                .ToListAsync(cancellationToken);
 
             claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role.Name.ToString())));
 

@@ -9,8 +9,7 @@ namespace ApiWithEF.Common
         public AutoMapperProfile()
         {
             CreateMap<AddUserDto, User>();
-            CreateMap<User, AddUserDto>();
-            CreateMap<GetUserDto, User>();
+            CreateMap<UpdateUserDto, User>();
             CreateMap<User, GetUserDto>();
         }    
     }

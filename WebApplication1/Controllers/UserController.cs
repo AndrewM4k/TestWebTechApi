@@ -36,13 +36,14 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet]
-        public async Task<IEnumerable<User>> Get([FromQuery] UserQuery query, CancellationToken cancellationToken)
+        public async Task<IEnumerable<GetUserDto>> Get([FromQuery] UserQuery query, CancellationToken cancellationToken)
         {
-            return await _userRepository.GetAllAsync(query, cancellationToken);
+            var users = await _userService.GetAllAsync(query, cancellationToken);
+            return users;
         }
 
         [HttpGet("{id:Guid}")]
-        public async Task<User> GetUserWithRolesById(Guid id, CancellationToken cancellationToken)
+        public async Task<GetUserDto> GetUserWithRolesById(Guid id, CancellationToken cancellationToken)
         {
             return await _userService.GetUserWithRolesAsync(id, cancellationToken);
         }

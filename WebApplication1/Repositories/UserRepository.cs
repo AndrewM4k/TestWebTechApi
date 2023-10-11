@@ -51,6 +51,9 @@ namespace WebApplication1.Repositories
 
         public async Task AddUserAsync(User user, CancellationToken cancellationToken)
         {
+            var userRole = await _context.Roles.FirstOrDefaultAsync(x => x.Name == RoleName.User);
+            user.Roles = new List<Role>() { userRole };
+
             await _context.AddAsync(user, cancellationToken);
             await _context.SaveChangesAsync(cancellationToken);
         }

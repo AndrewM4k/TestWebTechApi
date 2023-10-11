@@ -11,6 +11,5 @@ namespace WebApplication1.Dtos
         public string Password { get; set; }
         public int Age { get; set; }
         public Gender Gender { get; set; }
-        public IEnumerable<RoleName> Roles { get; set; }
     }
 }

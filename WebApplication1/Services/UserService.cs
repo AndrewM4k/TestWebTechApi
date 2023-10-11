@@ -1,8 +1,12 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using ApiWithEF.Common;
+using AutoMapper;
+using Microsoft.EntityFrameworkCore;
 using System.Threading;
 using WebApplication1.Controllers;
+using WebApplication1.Dtos;
 using WebApplication1.Enums;
 using WebApplication1.Models;
+using WebApplication1.Queries;
 using WebApplication1.Repositories;
 
 namespace WebApplication1.Services
@@ -12,21 +16,32 @@ namespace WebApplication1.Services
         private readonly ILogger<UserController> _logger;
         private readonly IUserRepository _userRepository;
         private readonly IPasswordHashingService _passwordHashingService;
+        private readonly IMapper _mapper;
 
-        public UserService(ILogger<UserController> logger, IUserRepository userRepository, IPasswordHashingService passwordHashingService)
+        public UserService(ILogger<UserController> logger, IUserRepository userRepository, IPasswordHashingService passwordHashingService, IMapper mapper)
         {
             _logger = logger;
             _userRepository = userRepository;
             _passwordHashingService = passwordHashingService;
+            _mapper = mapper;
         }
 
-        public async Task<User> GetUserWithRolesAsync(Guid userId, CancellationToken cancellationToken)
+        public async Task<IEnumerable<GetUserDto>> GetAllAsync(UserQuery userQuery, CancellationToken cancellationToken)
+        {
+            var users = await _userRepository.GetAllAsync(userQuery, cancellationToken);
+            var dtos = _mapper.Map<IEnumerable<GetUserDto>>(users);
+
+            return dtos;
+        }
+
+        public async Task<GetUserDto> GetUserWithRolesAsync(Guid userId, CancellationToken cancellationToken)
         {
             try
             {
                 var data = await _userRepository.GetUserWithRolesById(userId, cancellationToken);
                 //конветировать в GetUserDto, проверить что бы в нем были роли
-                return data;
+                var users = _mapper.Map<GetUserDto>(data);
+                return users;
             }
             catch (Exception ex)
             {
